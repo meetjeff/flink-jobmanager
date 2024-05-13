@@ -1,0 +1,46 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  flink-job-manager
+Resources:
+  FlinkManagerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambda
+      Handler: app.flink_job_action
+      Runtime: python3.11
+      Architectures:
+        - x86_64
+      Timeout: 30
+      VpcConfig:
+        SecurityGroupIds:
+          - sg-006c918d86f23427c
+        SubnetIds:
+          - subnet-0fde4056f91a66156
+          - subnet-04239deb7fda0ad6c
+          - subnet-0c3a6a0b27661eaad
+      Environment:
+        Variables:
+          SECRET_NAME: flink-manager-setting
+          REGION: ap-northeast-1
+      Events:
+        FlinkJobAction:
+          Type: Api
+          Properties:
+            Path: /flinkjob/{action}
+            Method: post
+      Layers:
+        - !Ref FlinkManagerLayer
+  FlinkManagerLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      ContentUri: src
+      CompatibleRuntimes:
+        - python3.11
+    Metadata:
+      BuildMethod: python3.11
+
+Outputs:
+  FlinkManagerApi:
+    Description: "API Gateway endpoint URL for Prod stage for FlinkManager function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/flinkjob/"

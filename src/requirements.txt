@@ -1,0 +1,4 @@
+requests
+elasticsearch
+boto3
+logging2slack
