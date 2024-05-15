@@ -11,6 +11,8 @@ boto3 = "*"
 logging2slack = "*"
 
 [dev-packages]
+pytest = "*"
+pytest-random-order = "*"
 
 [requires]
 python_version = "3.11"
