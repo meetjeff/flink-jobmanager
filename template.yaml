@@ -2,23 +2,51 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
   flink-job-manager
+
+Parameters:
+  EnvironmentType:
+    Description: "Environment type."
+    Type: String
+    AllowedValues:
+      - prod
+      - dev
+    Default: dev
+Conditions:
+  IsProd: !Equals [ !Ref EnvironmentType, "prod" ]
+
 Resources:
+  FlinkManagerExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [lambda.amazonaws.com]
+            Action: ['sts:AssumeRole']
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
   FlinkManagerFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: lambda
       Handler: app.flink_job_action
       Runtime: python3.11
+      Role: !GetAtt FlinkManagerExecutionRole.Arn
       Architectures:
         - x86_64
       Timeout: 30
       VpcConfig:
-        SecurityGroupIds:
-          - sg-006c918d86f23427c
-        SubnetIds:
-          - subnet-0fde4056f91a66156
-          - subnet-04239deb7fda0ad6c
-          - subnet-0c3a6a0b27661eaad
+        Fn::If:
+          - IsProd
+          - SecurityGroupIds:
+              - sg-006c918d86f23427c
+            SubnetIds:
+              - subnet-0fde4056f91a66156
+              - subnet-04239deb7fda0ad6c
+              - subnet-0c3a6a0b27661eaad
+          - !Ref AWS::NoValue
       Environment:
         Variables:
           SECRET_NAME: flink-manager-setting

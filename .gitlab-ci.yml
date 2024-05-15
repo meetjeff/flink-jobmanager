@@ -1,0 +1,105 @@
+variables:
+  AWS_DEFAULT_REGION: ap-northeast-1
+  SAM_CLI_TELEMETRY: 0
+
+stages:
+  - test
+  - build and deploy
+  - submit
+  - stop
+  - restart
+  - delete
+
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: never
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      variables:
+        ENV: prod
+        AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID_PROD
+        AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY_PROD
+        FLINK_MANAGER: $FLINK_MANAGER_PROD
+        SAVE_POINT: $SAVE_POINT_PROD
+        JOB_ID: $JOB_ID_PROD
+    - if: '$CI_COMMIT_BRANCH != "main"'
+      variables:
+        ENV: dev
+        AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID_DEV
+        AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY_DEV
+        FLINK_MANAGER: $FLINK_MANAGER_DEV
+        SAVE_POINT: $SAVE_POINT_DEV
+        JOB_ID: $JOB_ID_DEV
+
+test:
+  tags:
+    - docker
+  stage: test
+  image: python:3.11-slim
+  variables:
+    PYTHONPATH: "$CI_PROJECT_DIR/src" 
+  before_script:
+    - pip install pipenv
+    - pipenv install --dev --deploy --system
+  script:
+    - pytest -v --random-order
+
+build and deploy:
+  tags:
+    - docker
+  stage: build and deploy
+  image: python:3.11-slim
+  before_script:
+    - apt-get update && apt-get -y upgrade && apt-get install -y wget curl unzip
+    - |
+      curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+      unzip awscliv2.zip && \
+      ./aws/install
+    - |
+      wget https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-linux-x86_64.zip && \
+      unzip aws-sam-cli-linux-x86_64.zip -d sam-installation && \
+      ./sam-installation/install
+  script:
+    - sam build
+    - sam deploy --parameter-overrides EnvironmentType=$ENV
+  rules:
+    - changes:
+        - src/**/*
+        - lambda/**/*
+        - Pipfile.lock
+        - samconfig.toml
+        - template.yaml
+
+.action_template: &action_template
+  tags:
+    - docker
+  when: manual
+  before_script:
+    - apk update && apk add curl
+
+submit:
+  <<: *action_template
+  stage: submit
+  script:
+    - curl -X POST $FLINK_MANAGER/submit -d "{\"savepoint\":\"$SAVE_POINT\"}"
+
+stop:
+  <<: *action_template
+  stage: stop
+  script:
+    - curl -X POST $FLINK_MANAGER/stop -d "{\"jobid\":\"$JOB_ID\"}"
+
+restart:
+  <<: *action_template
+  stage: restart
+  script:
+    - curl -X POST $FLINK_MANAGER/restart -d "{\"jobid\":\"$JOB_ID\"}"
+
+delete:
+  tags:
+    - docker
+  stage: delete
+  when: manual
+  image: amazon/aws-sam-cli-build-image-provided:latest
+  script:
+    - sam delete --no-prompts
