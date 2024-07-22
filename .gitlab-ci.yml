@@ -33,11 +33,11 @@ workflow:
 
 test:
   tags:
-    - docker
+    - dind-runner
   stage: test
   image: python:3.11-slim
   variables:
-    PYTHONPATH: "$CI_PROJECT_DIR/src" 
+    PYTHONPATH: "$CI_PROJECT_DIR/src"
   before_script:
     - pip install pipenv
     - pipenv install --dev --deploy --system
@@ -46,7 +46,7 @@ test:
 
 build and deploy:
   tags:
-    - docker
+    - dind-runner
   stage: build and deploy
   image: python:3.11-slim
   before_script:
@@ -72,7 +72,7 @@ build and deploy:
 
 .action_template: &action_template
   tags:
-    - docker
+    - dind-runner
   when: manual
   before_script:
     - apk update && apk add curl
@@ -97,7 +97,7 @@ restart:
 
 delete:
   tags:
-    - docker
+    - dind-runner
   stage: delete
   when: manual
   image: amazon/aws-sam-cli-build-image-provided:latest
