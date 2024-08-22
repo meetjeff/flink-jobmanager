@@ -4,7 +4,7 @@ from datetime import datetime
 def get_storage_client(es_ip, es_port, es_user, es_password, es_index):
     try:
         es_client = Elasticsearch(
-            [f"http://{es_ip}:{es_port}"], 
+            [f"http://{es_ip}:{es_port}"],
             http_auth=(es_user, es_password)
         )
         return EsIndexClient(es_client, es_index)
@@ -12,7 +12,7 @@ def get_storage_client(es_ip, es_port, es_user, es_password, es_index):
         raise RuntimeError(f"Failed to get storage client, error: {e}")
 
 class EsIndexClient:
-    def __init__(self, es_client, es_index):
+    def __init__(self, es_client: Elasticsearch, es_index):
         self.es = es_client
         self.index = es_index
 
@@ -21,20 +21,20 @@ class EsIndexClient:
             query = {
                 "size": 1,
                 "sort": [
-                    {"id": {"order": "desc"}} 
+                    {"id": {"order": "desc"}}
                 ]
             }
             response = self.es.search(index=self.index, body=query)
             return response.get('hits').get('hits')[0].get('_source')
         except Exception as e:
             raise RuntimeError(f"Failed to get latest record, error: {e}")
-    
+
     def __next_id(self):
         try:
             return self.__get_latest_record()['id'] + 1
         except Exception:
             return 1
-        
+
     def __query_job(self, jobid):
         try:
             query = {
@@ -43,38 +43,38 @@ class EsIndexClient:
                     "match": {"jobid": jobid}
                 },
                 "sort": [
-                    {"id": {"order": "desc"}} 
+                    {"id": {"order": "desc"}}
                 ]
             }
             response = self.es.search(index=self.index, body=query)
             return response.get('hits').get('hits')[0].get('_source')
         except Exception as e:
             raise RuntimeError(f"Failed to query job, error: {e}")
-    
+
     def create_record(self, jarid, jobid, start_savepoint=None):
         try:
             id = self.__next_id()
             doc = {
                 "id": id,
-                "jarid": jarid, 
+                "jarid": jarid,
                 "jobid": jobid,
                 "start_timestamp": datetime.now(),
                 "start_savepoint": start_savepoint
             }
             res = self.es.index(
-                index=self.index, 
+                index=self.index,
                 id=id,
-                document=doc, 
+                document=doc,
                 op_type='create'
             )
             if res['result'] != 'created':
                 raise RuntimeError(res)
         except Exception as e:
             raise RuntimeError(f"Failed to create record: {jobid}, error: {e}")
-        
+
     def get_running_job(self):
         return self.__get_latest_record()['jobid']
-    
+
     def update_record(self, jobid, stop_savepoint):
         try:
             doc = self.__query_job(jobid)
@@ -86,7 +86,7 @@ class EsIndexClient:
             doc['stop_timestamp'] = datetime.now()
             doc['stop_savepoint'] = stop_savepoint
             res = self.es.index(
-                index=self.index, 
+                index=self.index,
                 id=doc['id'],
                 document=doc
             )
@@ -94,3 +94,9 @@ class EsIndexClient:
                 raise RuntimeError(res)
         except Exception as e:
             raise RuntimeError(f"Failed to update record: {jobid}, error: {e}")
+
+    def delete_all_index(self):
+        try:
+            return self.es.indices.delete(index='_all')
+        except Exception as e:
+            raise RuntimeError(f"Failed to delete index, error: {e}")

@@ -8,7 +8,8 @@ stages:
   - submit
   - stop
   - restart
-  - delete
+  - clean storage
+  - delete lambda
 
 workflow:
   rules:
@@ -61,7 +62,7 @@ build and deploy:
       ./sam-installation/install
   script:
     - sam build
-    - sam deploy --parameter-overrides EnvironmentType=$ENV
+    - sam deploy --parameter-overrides EnvironmentType=$ENV --no-fail-on-empty-changeset
   rules:
     - changes:
         - src/**/*
@@ -81,19 +82,25 @@ submit:
   <<: *action_template
   stage: submit
   script:
-    - curl -X POST $FLINK_MANAGER/submit -d "{\"savepoint\":\"$SAVE_POINT\"}"
+    - curl -X POST $FLINK_MANAGER/flinkjob/submit -d "{\"savepoint\":\"$SAVE_POINT\"}"
 
 stop:
   <<: *action_template
   stage: stop
   script:
-    - curl -X POST $FLINK_MANAGER/stop -d "{\"jobid\":\"$JOB_ID\"}"
+    - curl -X POST $FLINK_MANAGER/flinkjob/stop -d "{\"jobid\":\"$JOB_ID\"}"
 
 restart:
   <<: *action_template
   stage: restart
   script:
-    - curl -X POST $FLINK_MANAGER/restart -d "{\"jobid\":\"$JOB_ID\"}"
+    - curl -X POST $FLINK_MANAGER/flinkjob/restart -d "{\"jobid\":\"$JOB_ID\"}"
+
+clean storage:
+  <<: *action_template
+  stage: clean storage
+  script:
+    - curl -X DELETE $FLINK_MANAGER/clean-storage
 
 delete:
   tags:

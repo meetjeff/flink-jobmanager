@@ -18,8 +18,8 @@ class FlinkJobManager:
             payload['savepointPath'] = savepoint
         try:
             response = requests.post(
-                f"{self.base_url}/jars/{self.jar_id}/run", 
-                headers=headers, 
+                f"{self.base_url}/jars/{self.jar_id}/run",
+                headers=headers,
                 data=json.dumps(payload)
             )
             response_data = response.json()
@@ -39,7 +39,7 @@ class FlinkJobManager:
         headers = {'Content-Type': 'application/json'}
         try:
             response = requests.post(
-                f"{self.base_url}/jobs/{jobid}/stop", 
+                f"{self.base_url}/jobs/{jobid}/stop",
                 headers=headers
             )
             request_id = response.json().get('request-id')
@@ -73,3 +73,9 @@ class FlinkJobManager:
             return {'jobid': jobid, 'start-savepoint': savepoint}
         except Exception as e:
             raise RuntimeError(f"Failed to restart job, error: {e}")
+
+    def clean_storage(self):
+        try:
+            return self.storage.delete_all_index()
+        except Exception as e:
+            raise RuntimeError(f"Failed to clean storage, error: {e}")

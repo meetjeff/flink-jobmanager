@@ -21,9 +21,9 @@ class TestFlinkJobManager:
         mock_response = Mock(status_code=200)
         mock_response.json.return_value = {'jobid': '1234'}
         mock_post.return_value = mock_response
-        
+
         job_id = manager.submit_job()
-        
+
         assert job_id == '1234'
         manager.storage.create_record.assert_called_once_with('jar_id', '1234', None)
 
@@ -33,7 +33,7 @@ class TestFlinkJobManager:
         mock_response = Mock(status_code=200)
         mock_response.json.return_value = {}
         mock_post.return_value = mock_response
-        
+
         with pytest.raises(RuntimeError):
             manager.submit_job()
 
@@ -44,29 +44,29 @@ class TestFlinkJobManager:
         mock_stop_response = Mock(status_code=200)
         mock_stop_response.json.return_value = {'request-id': 'req123'}
         mock_post.return_value = mock_stop_response
-        
+
         mock_status_response = Mock(status_code=200)
         mock_status_response.json.return_value = {
             'status': {'id': 'COMPLETED'},
             'operation': {'location': 'file:/path/to/savepoint'}
         }
         mock_get.return_value = mock_status_response
-        
+
         storage_client.get_running_job.return_value = 'job123'
-        
+
         savepoint = manager.stop_job()
-        
+
         assert savepoint == '/path/to/savepoint'
         storage_client.update_record.assert_called_once_with('job123', '/path/to/savepoint')
-    
+
     @patch('requests.post')
     def test_stop_job_no_jobid_found(self, mock_post, manager, storage_client):
         """Test stop job failure due to missing running job."""
         storage_client.get_running_job.return_value = None
-        
+
         with pytest.raises(RuntimeError) as excinfo:
             manager.stop_job()
-        
+
         assert "Failed to get jobid" in str(excinfo.value)
         mock_post.assert_not_called()
 
@@ -79,5 +79,5 @@ class TestFlinkJobManager:
 
             with pytest.raises(RuntimeError) as excinfo:
                 manager.stop_job()
-            
+
             assert "Failed to stop job, error: Failed to establish a new connection" in str(excinfo.value)

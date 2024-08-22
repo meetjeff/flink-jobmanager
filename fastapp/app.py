@@ -13,7 +13,7 @@ app = FastAPI()
 @app.get("/")
 async def root():
     return RedirectResponse(
-        url='/docs', 
+        url='/docs',
         status_code=status.HTTP_307_TEMPORARY_REDIRECT
     )
 
@@ -24,7 +24,7 @@ async def submit(savepoint: Annotated[str, Body(embed=True)] = None):
         return {'jobid': jobid}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-    
+
 @app.post('/stop')
 async def stop(jobid: Annotated[str, Body(embed=True)] = None):
     try:
@@ -32,7 +32,7 @@ async def stop(jobid: Annotated[str, Body(embed=True)] = None):
         return {'savepoint': savepoint}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-    
+
 @app.post('/restart')
 async def restart(jobid: Annotated[str, Body(embed=True)] = None):
     try:
@@ -40,10 +40,10 @@ async def restart(jobid: Annotated[str, Body(embed=True)] = None):
         return job_info
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-    
-@app.post('/test')
-async def test(teststr: Annotated[str, Body(embed=True)] = None):
+
+@app.delete('/clean')
+async def clean():
     try:
-        return teststr
+        return job_manager.clean_storage()
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

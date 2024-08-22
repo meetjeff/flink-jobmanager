@@ -19,15 +19,15 @@ def test_get_latest_record_success(es_index_client, es_client_mock):
             ]
         }
     }
-    
+
     result = es_index_client._EsIndexClient__get_latest_record()
     assert result == {"id": 10, "jobid": "job1"}
 
 def test_get_latest_record_failure(es_index_client, es_client_mock):
     es_client_mock.search.side_effect = Exception("Search failed")
-    
+
     with pytest.raises(
-        RuntimeError, 
+        RuntimeError,
         match="Failed to get latest record, error: Search failed"
     ):
         es_index_client._EsIndexClient__get_latest_record()
@@ -40,13 +40,13 @@ def test_next_id_existing_record(es_index_client, es_client_mock):
             ]
         }
     }
-    
+
     result = es_index_client._EsIndexClient__next_id()
     assert result == 11
 
 def test_next_id_no_existing_record(es_index_client, es_client_mock):
     es_client_mock.search.side_effect = Exception("No records found")
-    
+
     result = es_index_client._EsIndexClient__next_id()
     assert result == 1
 
@@ -58,15 +58,15 @@ def test_query_job_success(es_index_client, es_client_mock):
             ]
         }
     }
-    
+
     result = es_index_client._EsIndexClient__query_job("job1")
     assert result == {"jobid": "job1", "id": 10}
 
 def test_query_job_failure(es_index_client, es_client_mock):
     es_client_mock.search.side_effect = Exception("Search failed")
-    
+
     with pytest.raises(
-        RuntimeError, 
+        RuntimeError,
         match="Failed to query job, error: Search failed"
     ):
         es_index_client._EsIndexClient__query_job("job1")
@@ -84,7 +84,7 @@ def test_create_record_success(mock_datetime, es_index_client, es_client_mock):
     }
 
     es_index_client.create_record("jar1", "job1", "savepoint1")
-    
+
     es_client_mock.index.assert_called_with(
         index="test_index",
         id=11,
@@ -100,9 +100,9 @@ def test_create_record_success(mock_datetime, es_index_client, es_client_mock):
 
 def test_create_record_failure(es_index_client, es_client_mock):
     es_client_mock.index.side_effect = Exception("Indexing failed")
-    
+
     with pytest.raises(
-        RuntimeError, 
+        RuntimeError,
         match="Failed to create record: job1, error: Indexing failed"
     ):
         es_index_client.create_record("jar1", "job1", "savepoint1")
@@ -115,7 +115,7 @@ def test_get_running_job(es_index_client, es_client_mock):
             ]
         }
     }
-    
+
     result = es_index_client.get_running_job()
     assert result == "job1"
 
@@ -146,9 +146,9 @@ def test_update_record_success(mock_datetime, es_index_client, es_client_mock):
 
 def test_update_record_failure(es_index_client, es_client_mock):
     es_client_mock.search.side_effect = Exception("Search failed")
-    
+
     with pytest.raises(
-        RuntimeError, 
+        RuntimeError,
         match="Failed to update record: job1, error: Failed to query job, error: Search failed"
     ):
         es_index_client.update_record("job1", "savepoint1")

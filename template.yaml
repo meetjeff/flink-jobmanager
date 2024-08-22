@@ -57,6 +57,11 @@ Resources:
           Properties:
             Path: /flinkjob/{action}
             Method: post
+        CleanStorage:
+          Type: Api
+          Properties:
+            Path: /clean-storage
+            Method: delete
       Layers:
         - !Ref FlinkManagerLayer
   FlinkManagerLayer:

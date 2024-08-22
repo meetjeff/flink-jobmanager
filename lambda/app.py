@@ -10,8 +10,9 @@ def flink_job_action(event, context):
 
     try:
         body = event.get('body')
+        http_method = event.get('httpMethod')
         request_info = {
-            "httpMethod": event.get("httpMethod"),
+            "httpMethod": http_method,
             "Host": event.get("headers").get("Host"),
             "User-Agent": event.get("headers").get("User-Agent"),
             "X-Forwarded-For": event.get("headers").get("X-Forwarded-For"),
@@ -28,6 +29,18 @@ def flink_job_action(event, context):
         logger.info(request_info)
 
         job_manager = get_job_manager(storage_config, flink_config)
+
+        if http_method == 'DELETE':
+            res = job_manager.clean_storage()
+            res_info = json.dumps({
+                "action": action,
+                "res": res
+            })
+            logger.info(res_info)
+            return {
+                "statusCode": 200,
+                "body": res_info,
+            }
 
         if body:
             try:
@@ -71,12 +84,12 @@ def flink_job_action(event, context):
                     "statusCode": 400,
                     "body": "action limit in [submit, stop, restart]",
                 }
-        
+
         logger.info(res_info)
         return {
             "statusCode": 200,
             "body": res_info,
-        }    
+        }
     except Exception as e:
         logger.error(str(e))
         return {
