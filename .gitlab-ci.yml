@@ -70,6 +70,7 @@ build and deploy:
         - Pipfile.lock
         - samconfig.toml
         - template.yaml
+        - .gitlab-ci.yml
 
 .action_template: &action_template
   tags:
