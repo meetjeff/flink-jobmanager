@@ -102,10 +102,10 @@ clean storage:
   script:
     - curl -X DELETE $FLINK_MANAGER/clean-storage
 
-delete:
+delete lambda:
   tags:
     - dind-runner
-  stage: delete
+  stage: delete lambda
   when: manual
   image: amazon/aws-sam-cli-build-image-provided:latest
   script:
