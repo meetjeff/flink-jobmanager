@@ -34,7 +34,7 @@ def flink_job_action(event, context):
             res = job_manager.clean_storage()
             res_info = json.dumps({
                 "action": "clean-storage",
-                "res": res
+                "res": str(res)
             })
             logger.info(res_info)
             return {
