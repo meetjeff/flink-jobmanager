@@ -33,7 +33,7 @@ def flink_job_action(event, context):
         if http_method == 'DELETE':
             res = job_manager.clean_storage()
             res_info = json.dumps({
-                "action": action,
+                "action": "clean-storage",
                 "res": res
             })
             logger.info(res_info)
